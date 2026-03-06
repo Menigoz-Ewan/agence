@@ -1,0 +1,55 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Card from "../../components/Card.astro";
+
+// LA CORRECTION EST ICI : on enlève les accolades autour de pb !
+import pb from "../../utils/pb";
+
+// 1. Génération des routes pour chaque agent
+export async function getStaticPaths() {
+    const agents = await pb.collection("Agent").getFullList();
+
+    return agents.map((agent) => ({
+        params: { id: agent.id },
+        props: { agent },
+    }));
+}
+
+// 2. Récupération de l'agent actuel
+const { agent } = Astro.props;
+
+// 3. Récupération des maisons liées à cet agent
+const offres = await pb.collection("Maison").getFullList({
+    filter: `Agent = '${agent.id}'`,
+});
+---
+
+<Layout title={`Offres de ${agent.prenom} ${agent.nom}`}>
+    <div class="max-w-7xl mx-auto px-6 py-12">
+        <div class="mb-10 text-center">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">
+                Les offres de {agent.prenom}
+                {agent.nom}
+            </h1>
+            <p class="text-lg text-gray-600">
+                Découvrez les biens immobiliers gérés par cet agent.
+            </p>
+        </div>
+
+        {
+            offres.length > 0 ? (
+                <div class="flex flex-wrap justify-center gap-6">
+                    {offres.map((maison) => (
+                        <Card maison={maison} />
+                    ))}
+                </div>
+            ) : (
+                <div class="text-center py-12 bg-gray-50 rounded-xl border border-gray-100">
+                    <p class="text-xl text-gray-500">
+                        Cet agent n'a aucune offre pour le moment. 🕵️‍♂️
+                    </p>
+                </div>
+            )
+        }
+    </div>
+</Layout>

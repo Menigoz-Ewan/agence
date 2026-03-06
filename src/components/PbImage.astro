@@ -1,25 +1,37 @@
 ---
-import pb from "../utils/pb";
-import { Image } from "astro:assets";
-
 interface Props {
-  record: { [key: string]: any }; // The record containing the image
-  imageField: string; // The field name for the image in the record
+  record: { [key: string]: any };
+  imageField: string;
 }
 
 const { record, imageField } = Astro.props;
 
-const imageURL = pb.files.getURL(record, record[imageField]);
+// 1. On gère le cas où PocketBase renverrait un tableau d'images au lieu d'une seule
+const nomFichier = Array.isArray(record[imageField])
+  ? record[imageField][0]
+  : record[imageField];
+
+// 2. On fabrique le lien
+const imageURL = `http://127.0.0.1:8090/api/files/${record.collectionId}/${record.id}/${nomFichier}`;
 ---
 
-{
-  imageURL && (
-    <img
-      src={imageURL}
-      alt={record.nomMaison || "Image"}
-      loading="lazy"
-      decoding="async"
-      style="width: 100%; height: auto;"
-    />
-  )
-}
+<div
+  style="border: 2px solid red; padding: 10px; margin: 10px; font-size: 12px; word-break: break-all;"
+>
+  <p>
+    <b>LIEN GÉNÉRÉ :</b>
+    <a href={imageURL} target="_blank" style="color: blue;">{imageURL}</a>
+  </p>
+
+  {
+    nomFichier ? (
+      <img
+        src={imageURL}
+        alt="Test"
+        style="width: 100%; max-height: 200px; object-fit: cover;"
+      />
+    ) : (
+      <p>⚠️ Aucune image trouvée dans record.{imageField}</p>
+    )
+  }
+</div>

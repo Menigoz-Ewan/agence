@@ -1,27 +1,94 @@
 ---
-import { Collections } from "../../pocketbase-types";
-import PbImage from "../components/PbImage.astro";
-import type { MaisonRecord } from "../utils/pocketbase-types";
-interface Props {
-    maison: MaisonRecord;
-}
 const { maison } = Astro.props;
-console.log("maison", maison);
+
+// On récupère l'image
+const nomImage =
+    maison.images && maison.images.length > 0 ? maison.images[0] : "";
+
+// On fabrique l'URL exacte
+const imageUrl = nomImage
+    ? `http://127.0.0.1:8090/api/files/${maison.collectionId}/${maison.id}/${nomImage}`
+    : "";
 ---
 
-<!-- <h2>{maison.nomMaison}</h2>
-    <p>{maison.adresse}</p>
+<div
+    class="card bg-base-100 w-96 shadow-sm m-5 border border-gray-200 hover:shadow-lg transition-shadow duration-300 overflow-hidden rounded-xl relative"
+>
+    <button
+        class="favoriteButton absolute top-2 right-2 z-10 p-2 bg-white/80 rounded-full hover:scale-110 transition-transform cursor-pointer border-none"
+        data-offre={JSON.stringify(maison)}
+    >
+        <img
+            id="favorite-icon"
+            src={maison.favori ? "/favorite_filled.png" : "/favorite.png"}
+            alt="Favorite Icon"
+            class="w-6 h-6"
+        />
+    </button>
 
-     -->
-<div class="card bg-base-100 w-96 shadow-sm m-5">
     <figure>
-        <PbImage record={maison} imageField="image" />
+        {
+            nomImage ? (
+                <img
+                    src={imageUrl}
+                    alt={maison.nomMaison}
+                    class="w-full h-56 object-cover"
+                />
+            ) : (
+                <div class="w-full h-56 bg-gray-100 flex items-center justify-center text-gray-400">
+                    Pas d'image
+                </div>
+            )
+        }
     </figure>
-    <div class="card-body">
-        <h2 class="card-title">{maison.nomMaison}</h2>
-        <p>{maison.adresse}</p>
-        <div class="card-actions justify-end">
-            <button class="btn btn-primary">Plus d'infos</button>
+
+    <div class="card-body p-6">
+        <h2 class="card-title text-xl font-bold text-gray-800">
+            {maison.nomMaison}
+        </h2>
+        <p class="text-gray-500 mt-2">{maison.adresse}</p>
+
+        <div class="card-actions justify-end mt-4">
+            <button
+                class="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            >
+                Plus d'infos
+            </button>
         </div>
     </div>
 </div>
+
+<script>
+    //@ts-nocheck
+    // 1. On importe TA fonction depuis le bon dossier
+    import { setFavori } from "../utils/pb";
+
+    // 2. On sélectionne tous les boutons qui ont la classe "favoriteButton"
+    const favoriteButtons = document.querySelectorAll(".favoriteButton");
+
+    // 3. On applique l'action sur chaque bouton de la page
+    favoriteButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            // On récupère les données cachées dans data-offre
+            const offreData = JSON.parse(button.dataset.offre || "{}");
+
+            // On calcule le nouveau statut (l'inverse de l'actuel)
+            const newFavori = !offreData.favori;
+
+            // On envoie la modification à PocketBase
+            setFavori(offreData);
+
+            // On change l'image du cœur instantanément (rempli ou vide)
+            const favIcon = button.querySelector("#favorite-icon");
+            if (favIcon) {
+                favIcon.src = newFavori
+                    ? "/favorite_filled.png"
+                    : "/favorite.png";
+            }
+
+            // On met à jour les données dans le bouton pour le prochain clic
+            offreData.favori = newFavori;
+            button.dataset.offre = JSON.stringify(offreData);
+        });
+    });
+</script>
